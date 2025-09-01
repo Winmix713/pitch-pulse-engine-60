@@ -1,3 +1,4 @@
+import { supabase } from '@/integrations/supabase/client';
 import { 
   CompetitionsResponse, 
   LiveMatchesResponse, 
@@ -29,55 +30,42 @@ function backoffDelay(attempt: number, base = 500): number {
 }
 
 class SportradarAPI {
-  private apiKey: string;
-  private baseURL: string;
+  private apiKey?: string; // kept for compatibility
   
-  constructor(opts: { apiKey?: string; baseURL?: string } = {}) {
-    this.apiKey = opts.apiKey || import.meta.env.VITE_SPORTRADAR_API_KEY || '';
-    this.baseURL = opts.baseURL || import.meta.env.VITE_SPORTRADAR_BASE_URL || 'https://api.sportradar.com/soccer/trial/v4/en';
+  constructor(opts: { apiKey?: string; baseURL?: string; isProxy?: boolean } = {}) {
+    this.apiKey = opts.apiKey; // kept for compatibility but not used anymore
   }
 
   private async request<T>(endpoint: string, params?: Record<string, any>): Promise<T> {
     try {
-      if (!this.apiKey) {
-        throw new APIError('API kulcs hiányzik. Ellenőrizd a beállításokat.', 401, 'NO_API_KEY');
-      }
-
-      const url = new URL(`${this.baseURL}${endpoint}`);
-      url.searchParams.append('api_key', this.apiKey);
-      
-      if (params) {
-        Object.entries(params).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            url.searchParams.append(key, String(value));
-          }
-        });
-      }
-
-      const response = await fetch(url.toString(), {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        },
+      const { data, error } = await supabase.functions.invoke('sportradar-proxy', {
+        body: { endpoint, params }
       });
 
-      if (!response.ok) {
+      if (error) {
+        throw new APIError(`Supabase function error: ${error.message}`, 500, 'FUNCTION_ERROR');
+      }
+
+      if (data.error) {
+        const status = data.error === 'API Error: 401' ? 401 :
+                      data.error === 'API Error: 403' ? 403 :
+                      data.error === 'API Error: 404' ? 404 :
+                      data.error === 'API Error: 429' ? 429 : 500;
+        
         const errorMessages: { [key: number]: string } = {
           401: 'Érvénytelen API kulcs. Ellenőrizd a beállításokat.',
           403: 'Nincs hozzáférés ehhez az adathoz. Ellenőrizd az előfizetésedet.',
           404: 'Az adott erőforrás nem található.',
-          429: 'Túl sok kérés. Várj egy kicsit, majd próbáld újra.',
-          500: 'Szerver hiba. Próbáld újra később.'
+          429: 'Túl sok kérés. Várj egy kicsit, majd próbáld újra.'
         };
 
         throw new APIError(
-          errorMessages[response.status] || `API hiba: ${response.statusText}`, 
-          response.status, 
-          response.status === 429 ? 'RATE_LIMIT' : 'API_ERROR'
+          errorMessages[status] || `API hiba: ${data.message}`, 
+          status, 
+          status === 429 ? 'RATE_LIMIT' : 'API_ERROR'
         );
       }
 
-      const data = await response.json();
       return data;
     } catch (error) {
       if (error instanceof APIError) {
@@ -89,36 +77,36 @@ class SportradarAPI {
 
   // Get all competitions
   getCompetitions(): Promise<CompetitionsResponse> {
-    return this.request('/competitions.json');
+    return this.request('/soccer/trial/v4/en/competitions.json');
   }
 
   // Get live matches (using live summaries endpoint)
   getLiveMatches(): Promise<LiveMatchesResponse> {
-    return this.request('/sport_events/live/summaries.json');
+    return this.request('/soccer/trial/v4/en/sport_events/live/summaries.json');
   }
 
   // Get match summary by ID
   getMatchSummary(matchId: string): Promise<MatchSummaryResponse> {
     const numericId = extractNumericId(matchId);
-    return this.request(`/sport_events/${numericId}/summary.json`);
+    return this.request(`/soccer/trial/v4/en/sport_events/${numericId}/summary.json`);
   }
 
   // Get season schedule
   getSeasonSchedule(seasonId: string): Promise<SeasonScheduleResponse> {
     const numericId = extractNumericId(seasonId);
-    return this.request(`/seasons/${numericId}/schedule.json`);
+    return this.request(`/soccer/trial/v4/en/seasons/${numericId}/schedule.json`);
   }
 
   // Get season standings
   getSeasonStandings(seasonId: string): Promise<StandingsResponse> {
     const numericId = extractNumericId(seasonId);
-    return this.request(`/seasons/${numericId}/standings.json`);
+    return this.request(`/soccer/trial/v4/en/seasons/${numericId}/standings.json`);
   }
 
-  // Get scheduled matches for a specific date (using daily schedules)
+  // Get scheduled matches for a specific date (using daily summaries)
   getScheduledMatches(dateISO: string): Promise<SeasonScheduleResponse> {
     // dateISO: YYYY-MM-DD
-    return this.request(`/schedules/${dateISO}/summaries.json`);
+    return this.request(`/soccer/trial/v4/en/schedules/${dateISO}/summaries.json`);
   }
 
   // Test API connection

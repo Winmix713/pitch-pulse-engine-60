@@ -26,9 +26,9 @@ const usePageVisibility = () => {
 // Create API instance
 let apiInstance: SportradarAPI | null = null;
 
-const getAPIInstance = () => {
-  if (!apiInstance) {
-    apiInstance = new SportradarAPI();
+const getAPIInstance = (apiKey: string) => {
+  if (!apiInstance || (apiInstance as any).apiKey !== apiKey) {
+    apiInstance = new SportradarAPI({ apiKey });
   }
   return apiInstance;
 };
@@ -37,7 +37,7 @@ const getAPIInstance = () => {
 export const useCompetitions = (apiKey: string) => {
   return useQuery({
     queryKey: ['competitions', !!apiKey],
-    queryFn: () => getAPIInstance().getCompetitions(),
+    queryFn: () => getAPIInstance(apiKey).getCompetitions(),
     enabled: !!apiKey,
     staleTime: 1000 * 60 * 30, // 30 minutes - competitions don't change often
     gcTime: 1000 * 60 * 60, // 1 hour garbage collection
@@ -50,7 +50,7 @@ export const useLiveMatches = (apiKey: string) => {
   
   return useQuery({
     queryKey: ['liveMatches', !!apiKey],
-    queryFn: () => getAPIInstance().getLiveMatches(),
+    queryFn: () => getAPIInstance(apiKey).getLiveMatches(),
     enabled: !!apiKey && isVisible && navigator.onLine,
     refetchInterval: isVisible && navigator.onLine ? 30000 : false,
     refetchOnWindowFocus: 'always',
@@ -62,7 +62,7 @@ export const useLiveMatches = (apiKey: string) => {
 export const useMatchSummary = (apiKey: string, matchId: string) => {
   return useQuery({
     queryKey: ['matchSummary', apiKey, matchId],
-    queryFn: () => getAPIInstance().getMatchSummary(matchId),
+    queryFn: () => getAPIInstance(apiKey).getMatchSummary(matchId),
     enabled: !!apiKey && !!matchId,
     refetchInterval: 30000, // Refresh every 30 seconds for live matches
     staleTime: 1000 * 10,
@@ -73,7 +73,7 @@ export const useMatchSummary = (apiKey: string, matchId: string) => {
 export const useSeasonSchedule = (apiKey: string, seasonId: string) => {
   return useQuery({
     queryKey: ['seasonSchedule', seasonId, !!apiKey],
-    queryFn: () => getAPIInstance().getSeasonSchedule(seasonId),
+    queryFn: () => getAPIInstance(apiKey).getSeasonSchedule(seasonId),
     enabled: !!apiKey && !!seasonId,
     staleTime: 1000 * 60 * 60, // 1 hour - schedules don't change frequently
     gcTime: 24 * 60 * 60 * 1000, // 24 hours garbage collection
@@ -84,7 +84,7 @@ export const useSeasonSchedule = (apiKey: string, seasonId: string) => {
 export const useSeasonStandings = (apiKey: string, seasonId: string) => {
   return useQuery({
     queryKey: ['seasonStandings', seasonId, !!apiKey],
-    queryFn: () => getAPIInstance().getSeasonStandings(seasonId),
+    queryFn: () => getAPIInstance(apiKey).getSeasonStandings(seasonId),
     enabled: !!apiKey && !!seasonId,
     staleTime: 1000 * 60 * 60, // 1 hour - standings don't change very frequently
     gcTime: 24 * 60 * 60 * 1000, // 24 hours garbage collection
@@ -95,7 +95,7 @@ export const useSeasonStandings = (apiKey: string, seasonId: string) => {
 export const useScheduledMatches = (apiKey: string, dateISO: string) => {
   return useQuery({
     queryKey: ['scheduledMatches', dateISO, !!apiKey],
-    queryFn: () => getAPIInstance().getScheduledMatches(dateISO),
+    queryFn: () => getAPIInstance(apiKey).getScheduledMatches(dateISO),
     enabled: !!apiKey && !!dateISO,
     staleTime: 1000 * 60 * 60, // 1 hour
     retry: 2,
@@ -137,7 +137,7 @@ export const transformMatchData = (match: Match) => {
 export const useAPITest = (apiKey: string) => {
   return useQuery({
     queryKey: ['apiTest', !!apiKey],
-    queryFn: () => getAPIInstance().testConnection(),
+    queryFn: () => getAPIInstance(apiKey).testConnection(),
     enabled: !!apiKey,
     retry: 1,
     staleTime: 1000 * 60 * 5, // 5 minutes
