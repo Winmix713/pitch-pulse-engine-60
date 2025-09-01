@@ -1,0 +1,4 @@
+project_id = "tssgzrzjxslvqmpxgsss"
+
+[functions.sportradar-proxy]
+verify_jwt = false
