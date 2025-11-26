@@ -696,84 +696,83 @@ export type Database = {
           created_at?: string | null
         }
         Relationships: []
-      }, // <-- A system_health_metrics lezárása és vessző a következő tábla előtt
-      system_logs: {
-        Row: {
-          id: string
-          component: string
-          status: "info" | "warning" | "error"
-          message: string | null
-          details: Json | null
-          created_at: string | null
-        }
-        Insert: {
-          id?: string
-          component: string
-          status: "info" | "warning" | "error"
-          message?: string | null
-          details?: Json | null
-          created_at?: string | null
-        }
-        Update: {
-          id?: string
-          component?: string
-          status?: "info" | "warning" | "error"
-          message?: string | null
-          details?: Json | null
-          created_at?: string | null
-        }
-        Relationships: []
-      }, // <-- A system_logs lezárása és vessző a feedback tábla előtt
-      feedback: {
-        Row: {
-          id: string
-          prediction_id: string
-          user_suggestion: string
-          submitted_by: string | null
-          metadata: Json | null
-          resolved: boolean
-          created_at: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          id?: string
-          prediction_id: string
-          user_suggestion: string
-          submitted_by?: string | null
-          metadata?: Json | null
-          resolved?: boolean
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          id?: string
-          prediction_id?: string
-          user_suggestion?: string
-          submitted_by?: string | null
-          metadata?: Json | null
-          resolved?: boolean
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "feedback_prediction_id_fkey"
-            columns: ["prediction_id"]
-            isOneToOne: false
-            referencedRelation: "predictions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "feedback_submitted_by_fkey"
-            columns: ["submitted_by"]
-            isOneToOne: false
-            referencedRelation: "user_profiles"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
+      },
+  system_logs: {
+    Row: {
+      id: string
+      component: string
+      status: "info" | "warning" | "error"
+      message: string | null
+      details: Json | null
+      created_at: string | null
     }
-    Views: {
+    Insert: {
+      id?: string
+      component: string
+      status: "info" | "warning" | "error"
+      message?: string | null
+      details?: Json | null
+      created_at?: string | null
+    }
+    Update: {
+      id?: string
+      component?: string
+      status?: "info" | "warning" | "error"
+      message?: string | null
+      details?: Json | null
+      created_at?: string | null
+    }
+    Relationships: []
+  }, // <-- ❗️Ez volt a hiányzó záró }, ami most pótolva lett
+  feedback: {
+    Row: {
+      id: string
+      prediction_id: string
+      user_suggestion: string
+      submitted_by: string | null
+      metadata: Json | null
+      resolved: boolean
+      created_at: string | null
+      updated_at: string | null
+    }
+    Insert: {
+      id?: string
+      prediction_id: string
+      user_suggestion: string
+      submitted_by?: string | null
+      metadata?: Json | null
+      resolved?: boolean
+      created_at?: string | null
+      updated_at?: string | null
+    }
+    Update: {
+      id?: string
+      prediction_id?: string
+      user_suggestion?: string
+      submitted_by?: string | null
+      metadata?: Json | null
+      resolved?: boolean
+      created_at?: string | null
+      updated_at?: string | null
+    }
+    Relationships: [
+      {
+        foreignKeyName: "feedback_prediction_id_fkey"
+        columns: ["prediction_id"]
+        isOneToOne: false
+        referencedRelation: "predictions"
+        referencedColumns: ["id"]
+      },
+      {
+        foreignKeyName: "feedback_submitted_by_fkey"
+        columns: ["submitted_by"]
+        isOneToOne: false
+        referencedRelation: "user_profiles"
+        referencedColumns: ["id"]
+      }
+    ]
+  }
+}Views: {
       [_ in never]: never
     }
     Functions: {
