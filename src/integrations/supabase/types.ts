@@ -696,7 +696,34 @@ export type Database = {
           created_at?: string | null
         }
         Relationships: []
-      }, // <-- Ide került a hiányzó lezáró kapcsos zárójel és vessző
+      }, // <-- A system_health_metrics lezárása és vessző a következő tábla előtt
+      system_logs: {
+        Row: {
+          id: string
+          component: string
+          status: "info" | "warning" | "error"
+          message: string | null
+          details: Json | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          component: string
+          status: "info" | "warning" | "error"
+          message?: string | null
+          details?: Json | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          component?: string
+          status?: "info" | "warning" | "error"
+          message?: string | null
+          details?: Json | null
+          created_at?: string | null
+        }
+        Relationships: []
+      }, // <-- A system_logs lezárása és vessző a feedback tábla előtt
       feedback: {
         Row: {
           id: string
