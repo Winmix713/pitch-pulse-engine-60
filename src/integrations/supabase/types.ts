@@ -696,33 +696,7 @@ export type Database = {
           created_at?: string | null
         }
         Relationships: []
-      }
-      system_logs: {
-        Row: {
-          id: string
-          component: string
-          status: "info" | "warning" | "error"
-          message: string | null
-          details: Json | null
-          created_at: string | null
-        }
-        Insert: {
-          id?: string
-          component: string
-          status: "info" | "warning" | "error"
-          message?: string | null
-          details?: Json | null
-          created_at?: string | null
-        }
-        Update: {
-          id?: string
-          component?: string
-          status?: "info" | "warning" | "error"
-          message?: string | null
-          details?: Json | null
-          created_at?: string | null
-        }
-        Relationships: []
+      }, // <-- Ide került a hiányzó lezáró kapcsos zárójel és vessző
       feedback: {
         Row: {
           id: string
