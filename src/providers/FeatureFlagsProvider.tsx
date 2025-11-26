@@ -1,107 +1,63 @@
-import { createContext, useCallback, type ReactNode } from "react";
-import { useLocalStorage } from "@/winmixpro/hooks/useLocalStorage";
-import { STORAGE_KEYS } from "@/winmixpro/lib/constants";
-import {
-  createDefaultConfig,
-  exportConfig,
-  filterFlagsByCategory,
-  getFlagValue,
-  importConfig,
-  isFlagEnabled,
-  validateConfig,
-} from "@/winmixpro/lib/feature-flags";
-import type { FeatureFlag, FeatureFlagsConfig } from "@/winmixpro/types";
+import React, { createContext, useContext, ReactNode } from 'react';
+import { phaseFlags } from '@/config/env';
 
-interface FeatureFlagsContextValue {
-  flags: FeatureFlag[];
-  config: FeatureFlagsConfig;
-  isEnabled: (flagId: string) => boolean;
-  getValue: <T = unknown>(flagId: string, metadataKey?: string) => T | undefined;
-  toggleFlag: (flagId: string) => void;
-  updateFlag: (flagId: string, updates: Partial<FeatureFlag>) => void;
-  exportFlags: () => string;
-  importFlags: (jsonString: string) => { success: boolean; errors?: string[] };
-  resetFlags: () => void;
-  getByCategory: (category: FeatureFlag["category"]) => FeatureFlag[];
+interface FeatureFlag {
+  phase5: boolean;    // Advanced pattern detection
+  phase6: boolean;    // Model evaluation & feedback loop  
+  phase7: boolean;    // Cross-league intelligence
+  phase8: boolean;    // Monitoring & visualization
+  phase9: boolean;    // Collaborative market intelligence
 }
 
-export const FeatureFlagsContext = createContext<FeatureFlagsContextValue | null>(null);
+interface FeatureFlagsContextType {
+  flags: FeatureFlag;
+  isEnabled: (flag: keyof FeatureFlag) => boolean;
+}
+
+const FeatureFlagsContext = createContext<FeatureFlagsContextType | undefined>(undefined);
+
+const defaultFlags: FeatureFlag = {
+  phase5: false,
+  phase6: false,
+  phase7: false,
+  phase8: false,
+  phase9: false,
+};
+
+const loadFlagsFromEnv = (): FeatureFlag => {
+  return {
+    phase5: phaseFlags.phase5,
+    phase6: phaseFlags.phase6,
+    phase7: phaseFlags.phase7,
+    phase8: phaseFlags.phase8,
+    phase9: phaseFlags.phase9,
+  };
+};
 
 interface FeatureFlagsProviderProps {
   children: ReactNode;
 }
 
-export const FeatureFlagsProvider = ({ children }: FeatureFlagsProviderProps) => {
-  const [config, setConfig] = useLocalStorage<FeatureFlagsConfig>(STORAGE_KEYS.FEATURE_FLAGS, createDefaultConfig());
+export const FeatureFlagsProvider: React.FC<FeatureFlagsProviderProps> = ({ children }) => {
+  const flags = { ...defaultFlags, ...loadFlagsFromEnv() };
 
-  const isEnabled = useCallback((flagId: string) => isFlagEnabled(config.flags, flagId), [config.flags]);
-
-  const getValue = useCallback(
-    <T = unknown,>(flagId: string, metadataKey?: string) => getFlagValue<T>(config.flags, flagId, metadataKey),
-    [config.flags],
-  );
-
-  const toggleFlag = useCallback(
-    (flagId: string) => {
-      setConfig((prev) => ({
-        ...prev,
-        flags: prev.flags.map((flag) => (flag.id === flagId ? { ...flag, enabled: !flag.enabled } : flag)),
-        lastUpdated: new Date().toISOString(),
-      }));
-    },
-    [setConfig],
-  );
-
-  const updateFlag = useCallback(
-    (flagId: string, updates: Partial<FeatureFlag>) => {
-      setConfig((prev) => ({
-        ...prev,
-        flags: prev.flags.map((flag) => (flag.id === flagId ? { ...flag, ...updates } : flag)),
-        lastUpdated: new Date().toISOString(),
-      }));
-    },
-    [setConfig],
-  );
-
-  const exportFlags = useCallback(() => exportConfig(config), [config]);
-
-  const importFlagsCallback = useCallback(
-    (jsonString: string) => {
-      const result = importConfig(jsonString);
-      if (result.success && result.config) {
-        const validation = validateConfig(result.config);
-        if (validation.valid) {
-          setConfig(result.config);
-          return { success: true };
-        }
-        return { success: false, errors: validation.errors };
-      }
-      return result;
-    },
-    [setConfig],
-  );
-
-  const resetFlags = useCallback(() => {
-    setConfig(createDefaultConfig());
-  }, [setConfig]);
-
-  const getByCategory = useCallback(
-    (category: FeatureFlag["category"]) => filterFlagsByCategory(config.flags, category),
-    [config.flags],
-  );
-
-  const value: FeatureFlagsContextValue = {
-    flags: config.flags,
-    config,
-    isEnabled,
-    getValue,
-    toggleFlag,
-    updateFlag,
-    exportFlags,
-    importFlags: importFlagsCallback,
-    resetFlags,
-    getByCategory,
+  const isEnabled = (flag: keyof FeatureFlag): boolean => {
+    return flags[flag];
   };
 
-  return <FeatureFlagsContext.Provider value={value}>{children}</FeatureFlagsContext.Provider>;
+  return (
+    <FeatureFlagsContext.Provider value={{ flags, isEnabled }}>
+      {children}
+    </FeatureFlagsContext.Provider>
+  );
 };
+
+export const useFeatureFlags = (): FeatureFlagsContextType => {
+  const context = useContext(FeatureFlagsContext);
+  if (context === undefined) {
+    throw new Error('useFeatureFlags must be used within a FeatureFlagsProvider');
+  }
+  return context;
+};
+
+export type { FeatureFlag };
